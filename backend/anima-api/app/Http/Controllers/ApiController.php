@@ -32,15 +32,15 @@ class ApiController extends Controller
         $randNum = rand(111111, 999999);
         $currentDate = date('Y/m/d H:i:s');
         $expTimeStamp = strtotime(" $currentDate + 5 minutes");
+        $tokenExp =  date('Y/m/d H:i:s', $expTimeStamp);
         $token->tokenDate = $currentDate;
-        $token->expiration = date('Y/m/d H:i:s', $expTimeStamp);
+        $token->expiration = $tokenExp;
         $token->origin = $originId;
         $token->destination = $destinationId;
         $token->email = $email;
         $token->value = $randNum;
-        $email = new Mailer($token);
+        Mail::to('kevinmorapais532@gmail.com')->send(new Mailer($token));
         $token->save();
-        Mail::to('kevin.mora@anima.edu.uy')->send($email);
     }
 
     function checkToken($originId, $destinationId, $email)
