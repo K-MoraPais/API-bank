@@ -65,7 +65,13 @@ class ApiController extends Controller
                     $account = Account::where('email', '=', $request->input('email'))->get();
                     if (Token::where('value', '=', $request->input('token'))->where('accountID', '=', $account[0]->accountId)->exists()) {
                         $token = Token::where('value', '=', $request->input('token'))->where('accountID', '=', $account[0]->accountId)->get();
-                        return $token;
+                        $Withdrawal = Withdrawal::where('withdrawalId', '=', $token[0]->transactionID)->get();
+                        $accountBal = $account[0]->balance;
+                        Account::where('accountId', $Withdrawal[0]->origen)->update(['balance' => $accountBal - $Withdrawal[0]->monto], ['state' => 1]);
+                        $currentBal = $account[0]->balance - $Withdrawal[0]->monto;
+                        Token::where('tokenId', '=', $token[0]->tokenId)->delete();
+                        return $this->sendResponse($request->input('email') . ' , ' . $currentBal, "Withdrawal successful", 200);
+                        
                     }
                     return $this->sendResponse("Error", "Provided values do not match any record.", 404);
                 }
