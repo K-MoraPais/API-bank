@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 13, 2021 at 04:16 PM
+-- Generation Time: Aug 30, 2021 at 01:15 AM
 -- Server version: 10.4.20-MariaDB
--- PHP Version: 7.3.29
+-- PHP Version: 8.0.8
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -38,7 +38,7 @@ CREATE TABLE `accounts` (
 --
 
 INSERT INTO `accounts` (`email`, `accountId`, `balance`) VALUES
-('kevin', 9, 1001001);
+('kevin', 9, 1001982);
 
 -- --------------------------------------------------------
 
@@ -59,7 +59,8 @@ CREATE TABLE `deposits` (
 INSERT INTO `deposits` (`depositId`, `destino`, `monto`) VALUES
 (62, 9, 1001),
 (63, 9, 999999),
-(64, 9, 1);
+(64, 9, 1),
+(65, 9, 1001);
 
 -- --------------------------------------------------------
 
@@ -69,11 +70,20 @@ INSERT INTO `deposits` (`depositId`, `destino`, `monto`) VALUES
 
 CREATE TABLE `tokens` (
   `tokenDate` datetime NOT NULL,
+  `expiration` datetime NOT NULL,
   `tokenId` int(11) NOT NULL,
+  `value` int(11) NOT NULL,
   `origin` int(11) NOT NULL,
   `destination` int(11) NOT NULL DEFAULT 0,
   `email` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dumping data for table `tokens`
+--
+
+INSERT INTO `tokens` (`tokenDate`, `expiration`, `tokenId`, `value`, `origin`, `destination`, `email`) VALUES
+('2021-08-29 20:11:29', '2021-08-29 20:16:29', 81, 202358, 9, 0, 'kevin');
 
 -- --------------------------------------------------------
 
@@ -83,6 +93,7 @@ CREATE TABLE `tokens` (
 
 CREATE TABLE `transfers` (
   `transferId` int(11) NOT NULL,
+  `state` tinyint(4) NOT NULL DEFAULT 1,
   `origen` int(11) NOT NULL,
   `destino` int(11) NOT NULL,
   `monto` int(11) NOT NULL
@@ -96,9 +107,18 @@ CREATE TABLE `transfers` (
 
 CREATE TABLE `withdrawals` (
   `withdrawalId` int(11) NOT NULL,
+  `state` tinyint(4) NOT NULL DEFAULT 1,
   `origen` int(11) NOT NULL,
   `monto` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dumping data for table `withdrawals`
+--
+
+INSERT INTO `withdrawals` (`withdrawalId`, `state`, `origen`, `monto`) VALUES
+(6, 1, 9, 10),
+(7, 1, 9, 10);
 
 --
 -- Indexes for dumped tables
@@ -148,13 +168,13 @@ ALTER TABLE `accounts`
 -- AUTO_INCREMENT for table `deposits`
 --
 ALTER TABLE `deposits`
-  MODIFY `depositId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
+  MODIFY `depositId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
 
 --
 -- AUTO_INCREMENT for table `tokens`
 --
 ALTER TABLE `tokens`
-  MODIFY `tokenId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
+  MODIFY `tokenId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=82;
 
 --
 -- AUTO_INCREMENT for table `transfers`
@@ -166,7 +186,7 @@ ALTER TABLE `transfers`
 -- AUTO_INCREMENT for table `withdrawals`
 --
 ALTER TABLE `withdrawals`
-  MODIFY `withdrawalId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `withdrawalId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

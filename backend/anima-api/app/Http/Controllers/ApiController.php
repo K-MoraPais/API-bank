@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers;
 
+date_default_timezone_set("America/Argentina/Buenos_Aires");
+
 use Illuminate\Http\Request;
 use App\Models\Deposit;
 use App\Models\Transfer;
 use App\Models\Withdrawal;
 use App\Models\Account;
 use  App\Models\Token;
-use DateTime;
+use App\Mail\Mailer;
+use Illuminate\Support\Facades\Mail;
+
 
 class ApiController extends Controller
 {
@@ -25,21 +29,27 @@ class ApiController extends Controller
     function createToken($originId, $destinationId, $email)
     {
         $token = new Token();
-        $token->tokenDate = date('Y/m/d H:i:s');
+        $randNum = rand(111111, 999999);
+        $currentDate = date('Y/m/d H:i:s');
+        $expTimeStamp = strtotime(" $currentDate + 5 minutes");
+        $token->tokenDate = $currentDate;
+        $token->expiration = date('Y/m/d H:i:s', $expTimeStamp);
         $token->origin = $originId;
         $token->destination = $destinationId;
         $token->email = $email;
+        $token->value = $randNum;
+        $email = new Mailer($token);
         $token->save();
+        Mail::to('kevin.mora@anima.edu.uy')->send($email);
     }
 
     function checkToken($originId, $destinationId, $email)
     {
-
-        $currentDate = date('Y/m/d H:i:s');
-        $maxTimeStamp = strtotime(" $currentDate + 5 minutes");
-        $maxTime = date('Y/m/d H:i:s', $maxTimeStamp);
-        $test = Token::whereBetween('tokenDate', ["$currentDate", "$maxTime"])->where('origin', $originId)->where('destination', $destinationId)->get();
-        //$test = Token::whereBetween('tokenDate', ['2021/08/13 13:36:14', '2021/08/13 13:41:36'])->get();
+        if ($destinationId) {
+            $test = Token::where('expiration', '>', date('Y/m/d H:i:s'))->where('origin', $originId)->where('destination', $destinationId)->get();
+        } else {
+            $test = Token::where('expiration', '>', date('Y/m/d H:i:s'))->where('origin', $originId)->where('destination', 0)->get();
+        }
         return $test;
     }
 
@@ -95,20 +105,21 @@ class ApiController extends Controller
                                 return "WIP";
                             }
                             //Here
-                            if (!$this->checkToken($request->input('origen'), $request->input('destino'), $request->input('email'))) {
+                            if (count($this->checkToken($request->input('origen'), $request->input('destino'), $request->input('email'))) == 0) {
                                 $this->createToken($request->input('origen'), 0, $request->input('email'));
                                 return $this->checkToken($request->input('origen'), $request->input('destino'), $request->input('email'));
                             }
-                            return $this->checkToken($request->input('origen'), 0, $request->input('email'));
+                            return  $this->checkToken($request->input('origen'), 0, $request->input('email'));
                         }
 
                         return "Email does not belong to an account";
                         // $this->createToken($request->input('origen'), 0);
-                        // Account::where('accountId', $request->input('origen'))->update(['balance' => $accountBal - $request->input('monto')]);
-                        // $currentBal = Account::where('accountId', $request->input('origen'))->select('balance')->get()[0]->balance;
-                        // $Withdrawal->save();
-                        //return $this->sendResponse($request->input('origen') . ' , ' . $currentBal, "Withdrawal successful", 200);
+
                     }
+                    Account::where('accountId', $request->input('origen'))->update(['balance' => $accountBal - $request->input('monto')]);
+                    $currentBal = Account::where('accountId', $request->input('origen'))->select('balance')->get()[0]->balance;
+                    $Withdrawal->save();
+                    return $this->sendResponse($request->input('origen') . ' , ' . $currentBal, "Withdrawal successful", 200);
                 } catch (\Exception $e) {
                     return $e;
                 }
