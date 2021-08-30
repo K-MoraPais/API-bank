@@ -48,7 +48,7 @@ class ApiController extends Controller
         if ($destinationId) {
             // $test = Token::where('expiration', '>', date('Y/m/d H:i:s'))->where('origin', $originId)->where('destination', 0)->get();
         } else {
-            $test = Token::where('expiration', '>', date('Y/m/d H:i:s'))->get();
+            $test = Token::where('expiration', '>', date('Y/m/d H:i:s'))->join('withdrawals', 'withdrawalId', '=', 'transactionID')->join('accounts', 'accounts.accountId', '=', 'tokens.accountID')->select('tokens.*')->get();
         }
         return $test;
     }
