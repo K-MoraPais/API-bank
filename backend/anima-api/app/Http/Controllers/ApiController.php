@@ -19,7 +19,6 @@ class ApiController extends Controller
     function sendResponse($result, $message, $code)
     {
         $response = [
-            "success" => true,
             "data" => $result,
             "message" => $message
         ];
@@ -108,16 +107,17 @@ class ApiController extends Controller
                                 return "WIP";
                             }
                             //Here
-                            if (count($this->checkToken($request->input('origen'), null, $request->input('email'), $request->input('monto'))) == 0) {
+                            $tokenSearch = $this->checkToken($request->input('origen'), null, $request->input('email'), $request->input('monto'));
+                            if (count($tokenSearch) == 0) {
                                 $Withdrawal->state = 0;
                                 $Withdrawal->save();
                                 $latestWithdrawal = Withdrawal::orderBy('date', 'desc')->limit(1)->get();
                                 $account = Account::where('accountId', $request->input('origen'))->get();
                                 $this->createToken($latestWithdrawal[0]->withdrawalId, $account[0]->accountId);
-                                return $this->checkToken($request->input('origen'), null, $request->input('email'), $request->input('monto'));
+                                return $this->sendResponse("OK", "A withdrawal token has been created, it will expire in 5 minutes", 200);
                                 //$this->checkToken($request->input('origen'), $request->input('destino'), $request->input('email'));
                             }
-                            return "a";
+                            return $this->sendResponse("Error", "A withdrawal token for this account already exists, it will expire at ". $tokenSearch[0]->expiration, 400);
                             //$this->checkToken($request->input('origen'), 0, $request->input('email'));
                         }
                         return "Email does not belong to an account";
