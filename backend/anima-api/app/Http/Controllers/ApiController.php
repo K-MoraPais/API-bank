@@ -26,29 +26,29 @@ class ApiController extends Controller
         return response()->json($response, $code);
     }
 
-    function createToken($originId, $destinationId, $email)
+    function createToken($transactionID, $accountID)
     {
         $token = new Token();
         $randNum = rand(111111, 999999);
         $currentDate = date('Y/m/d H:i:s');
         $expTimeStamp = strtotime(" $currentDate + 5 minutes");
-        $tokenExp =  date('Y/m/d H:i:s', $expTimeStamp);
+        $tokenExp = date('Y/m/d H:i:s', $expTimeStamp);
+
         $token->tokenDate = $currentDate;
         $token->expiration = $tokenExp;
-        $token->origin = $originId;
-        $token->destination = $destinationId;
-        $token->email = $email;
         $token->value = $randNum;
+        $token->transactionID = $transactionID;
+        $token->accountID = $accountID;
         Mail::to('kevinmorapais532@gmail.com')->send(new Mailer($token));
         $token->save();
     }
 
-    function checkToken($originId, $destinationId, $email)
+    function checkToken($originId, $destinationId, $email, $amount)
     {
         if ($destinationId) {
-            $test = Token::where('expiration', '>', date('Y/m/d H:i:s'))->where('origin', $originId)->where('destination', $destinationId)->get();
+            // $test = Token::where('expiration', '>', date('Y/m/d H:i:s'))->where('origin', $originId)->where('destination', 0)->get();
         } else {
-            $test = Token::where('expiration', '>', date('Y/m/d H:i:s'))->where('origin', $originId)->where('destination', 0)->get();
+            $test = Token::where('expiration', '>', date('Y/m/d H:i:s'))->get();
         }
         return $test;
     }
@@ -92,6 +92,7 @@ class ApiController extends Controller
                     $Withdrawal = new Withdrawal();
                     $Withdrawal->origen = $request->input('origen');
                     $Withdrawal->monto = $request->input('monto');
+                    $Withdrawal->date = date('Y/m/d H:i:s');
                     if (!Account::where('accountId', $request->input('origen'))->exists()) {
                         return $this->sendResponse("Error", "Origin does not exist", 404);
                     }
@@ -105,16 +106,19 @@ class ApiController extends Controller
                                 return "WIP";
                             }
                             //Here
-                            if (count($this->checkToken($request->input('origen'), $request->input('destino'), $request->input('email'))) == 0) {
-                                $this->createToken($request->input('origen'), 0, $request->input('email'));
-                                return $this->checkToken($request->input('origen'), $request->input('destino'), $request->input('email'));
+                            if (count($this->checkToken($request->input('origen'), null, $request->input('email'), $request->input('monto'))) == 0) {
+                                $Withdrawal->state = 0;
+                                $Withdrawal->save();
+                                $latestWithdrawal = Withdrawal::orderBy('date', 'desc')->limit(1)->get();
+                                $account = Account::where('email', $request->input('email'))->get();
+                                $this->createToken($latestWithdrawal[0]->withdrawalId, $account[0]->accountId);
+                                return $this->checkToken($request->input('origen'), null, $request->input('email'), $request->input('monto'));
+                                //$this->checkToken($request->input('origen'), $request->input('destino'), $request->input('email'));
                             }
-                            return  $this->checkToken($request->input('origen'), 0, $request->input('email'));
+                            return "a";
+                            //$this->checkToken($request->input('origen'), 0, $request->input('email'));
                         }
-
                         return "Email does not belong to an account";
-                        // $this->createToken($request->input('origen'), 0);
-
                     }
                     Account::where('accountId', $request->input('origen'))->update(['balance' => $accountBal - $request->input('monto')]);
                     $currentBal = Account::where('accountId', $request->input('origen'))->select('balance')->get()[0]->balance;
