@@ -25,7 +25,7 @@ class ApiController extends Controller
         return response()->json($response, $code);
     }
 
-    function createToken($transactionID, $accountID)
+    function createToken($transactionID, $accountID, $type)
     {
         $token = new Token();
         $randNum = rand(111111, 999999);
@@ -38,16 +38,18 @@ class ApiController extends Controller
         $token->value = $randNum;
         $token->transactionID = $transactionID;
         $token->accountID = $accountID;
+        $token->transactionType = $type;
         Mail::to('kevinmorapais532@gmail.com')->send(new Mailer($token));
         $token->save();
     }
 
-    function checkToken($originId, $destinationId)
+    function checkToken($originId, $destinationId, $type)
     {
+        Token::where('expiration', '<', date('Y/m/d H:i:s'))->delete();
         if ($destinationId) {
             // $test = Token::where('expiration', '>', date('Y/m/d H:i:s'))->where('origin', $originId)->where('destination', 0)->get();
         } else {
-            $token = Token::where('expiration', '>', date('Y/m/d H:i:s'))->where('tokens.accountID', '=', $originId)->join('withdrawals', 'withdrawalId', '=', 'transactionID')->join('accounts', 'accounts.accountId', '=', 'tokens.accountID')->select('tokens.*')->get();
+            $token = Token::where('expiration', '>', date('Y/m/d H:i:s'))->where('tokens.accountID', '=', $originId)->where('transactionType', '=', $type)->join('withdrawals', 'withdrawalId', '=', 'transactionID')->join('accounts', 'accounts.accountId', '=', 'tokens.accountID')->select('tokens.*')->get();
         }
         return $token;
     }
@@ -58,6 +60,16 @@ class ApiController extends Controller
         $requestType = $request->input('tipo');
         switch ($requestType) {
             case 'token':
+                $this->checkToken(null, null, null);
+                if (Account::where('email', '=', $request->input('email'))->exists()) {
+                    $account = Account::where('email', '=', $request->input('email'))->get();
+                    if (Token::where('value', '=', $request->input('token'))->where('accountID', '=', $account[0]->accountId)->exists()) {
+                        $token = Token::where('value', '=', $request->input('token'))->where('accountID', '=', $account[0]->accountId)->get();
+                        return $token;
+                    }
+                    return $this->sendResponse("Error", "Provided values do not match any record.", 404);
+                }
+                return $this->sendResponse("Error", "Email does not belong to an account", 404);
                 break;
             case 'crear':
                 if (Account::where('email', $request->input('email'))->select('balance')->exists()) {
@@ -103,21 +115,17 @@ class ApiController extends Controller
                     }
                     if ($request->input('monto') > 1000) {
                         if (Account::where('email', $request->input('email'))->exists()) {
-                            if ($request->input('token')) {
-                                return "WIP";
-                            }
-                            //Here
-                            $tokenSearch = $this->checkToken($request->input('origen'), null, $request->input('email'), $request->input('monto'));
+                            $tokenSearch = $this->checkToken($request->input('origen'), null, 0);
                             if (count($tokenSearch) == 0) {
                                 $Withdrawal->state = 0;
                                 $Withdrawal->save();
                                 $latestWithdrawal = Withdrawal::orderBy('date', 'desc')->limit(1)->get();
                                 $account = Account::where('accountId', $request->input('origen'))->get();
-                                $this->createToken($latestWithdrawal[0]->withdrawalId, $account[0]->accountId);
+                                $this->createToken($latestWithdrawal[0]->withdrawalId, $account[0]->accountId, 0);
                                 return $this->sendResponse("OK", "A withdrawal token has been created, it will expire in 5 minutes", 200);
                                 //$this->checkToken($request->input('origen'), $request->input('destino'), $request->input('email'));
                             }
-                            return $this->sendResponse("Error", "A withdrawal token for this account already exists, it will expire at ". $tokenSearch[0]->expiration, 400);
+                            return $this->sendResponse("Error", "A withdrawal token for this account already exists, it will expire at " . $tokenSearch[0]->expiration, 400);
                             //$this->checkToken($request->input('origen'), 0, $request->input('email'));
                         }
                         return "Email does not belong to an account";
