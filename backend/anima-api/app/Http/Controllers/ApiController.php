@@ -43,14 +43,14 @@ class ApiController extends Controller
         $token->save();
     }
 
-    function checkToken($originId, $destinationId, $email, $amount)
+    function checkToken($originId, $destinationId)
     {
         if ($destinationId) {
             // $test = Token::where('expiration', '>', date('Y/m/d H:i:s'))->where('origin', $originId)->where('destination', 0)->get();
         } else {
-            $test = Token::where('expiration', '>', date('Y/m/d H:i:s'))->join('withdrawals', 'withdrawalId', '=', 'transactionID')->join('accounts', 'accounts.accountId', '=', 'tokens.accountID')->select('tokens.*')->get();
+            $token = Token::where('expiration', '>', date('Y/m/d H:i:s'))->where('tokens.accountID', '=', $originId)->join('withdrawals', 'withdrawalId', '=', 'transactionID')->join('accounts', 'accounts.accountId', '=', 'tokens.accountID')->select('tokens.*')->get();
         }
-        return $test;
+        return $token;
     }
 
     function handler(Request $request)
@@ -58,6 +58,8 @@ class ApiController extends Controller
 
         $requestType = $request->input('tipo');
         switch ($requestType) {
+            case 'token':
+                break;
             case 'crear':
                 if (Account::where('email', $request->input('email'))->select('balance')->exists()) {
                     return $this->sendResponse("", "Email is already in use", 404);
@@ -110,7 +112,7 @@ class ApiController extends Controller
                                 $Withdrawal->state = 0;
                                 $Withdrawal->save();
                                 $latestWithdrawal = Withdrawal::orderBy('date', 'desc')->limit(1)->get();
-                                $account = Account::where('email', $request->input('email'))->get();
+                                $account = Account::where('accountId', $request->input('origen'))->get();
                                 $this->createToken($latestWithdrawal[0]->withdrawalId, $account[0]->accountId);
                                 return $this->checkToken($request->input('origen'), null, $request->input('email'), $request->input('monto'));
                                 //$this->checkToken($request->input('origen'), $request->input('destino'), $request->input('email'));
