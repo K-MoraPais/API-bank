@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 30, 2021 at 01:15 AM
+-- Generation Time: Aug 30, 2021 at 06:04 AM
 -- Server version: 10.4.20-MariaDB
 -- PHP Version: 8.0.8
 
@@ -38,7 +38,8 @@ CREATE TABLE `accounts` (
 --
 
 INSERT INTO `accounts` (`email`, `accountId`, `balance`) VALUES
-('kevin', 9, 1001982);
+('kevin', 9, 1001982),
+('mora', 10, 8998);
 
 -- --------------------------------------------------------
 
@@ -72,18 +73,11 @@ CREATE TABLE `tokens` (
   `tokenDate` datetime NOT NULL,
   `expiration` datetime NOT NULL,
   `tokenId` int(11) NOT NULL,
+  `transactionID` int(11) NOT NULL,
   `value` int(11) NOT NULL,
-  `origin` int(11) NOT NULL,
-  `destination` int(11) NOT NULL DEFAULT 0,
-  `email` varchar(255) NOT NULL
+  `accountID` int(11) NOT NULL,
+  `transactionType` tinyint(4) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Dumping data for table `tokens`
---
-
-INSERT INTO `tokens` (`tokenDate`, `expiration`, `tokenId`, `value`, `origin`, `destination`, `email`) VALUES
-('2021-08-29 20:11:29', '2021-08-29 20:16:29', 81, 202358, 9, 0, 'kevin');
 
 -- --------------------------------------------------------
 
@@ -106,6 +100,7 @@ CREATE TABLE `transfers` (
 --
 
 CREATE TABLE `withdrawals` (
+  `Date` datetime NOT NULL,
   `withdrawalId` int(11) NOT NULL,
   `state` tinyint(4) NOT NULL DEFAULT 1,
   `origen` int(11) NOT NULL,
@@ -116,9 +111,9 @@ CREATE TABLE `withdrawals` (
 -- Dumping data for table `withdrawals`
 --
 
-INSERT INTO `withdrawals` (`withdrawalId`, `state`, `origen`, `monto`) VALUES
-(6, 1, 9, 10),
-(7, 1, 9, 10);
+INSERT INTO `withdrawals` (`Date`, `withdrawalId`, `state`, `origen`, `monto`) VALUES
+('2021-08-30 01:00:09', 57, 0, 10, 1002),
+('2021-08-30 01:03:07', 58, 0, 10, 1002);
 
 --
 -- Indexes for dumped tables
@@ -162,7 +157,7 @@ ALTER TABLE `withdrawals`
 -- AUTO_INCREMENT for table `accounts`
 --
 ALTER TABLE `accounts`
-  MODIFY `accountId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `accountId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `deposits`
@@ -174,7 +169,7 @@ ALTER TABLE `deposits`
 -- AUTO_INCREMENT for table `tokens`
 --
 ALTER TABLE `tokens`
-  MODIFY `tokenId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=82;
+  MODIFY `tokenId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=128;
 
 --
 -- AUTO_INCREMENT for table `transfers`
@@ -186,7 +181,7 @@ ALTER TABLE `transfers`
 -- AUTO_INCREMENT for table `withdrawals`
 --
 ALTER TABLE `withdrawals`
-  MODIFY `withdrawalId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `withdrawalId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
